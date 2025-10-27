@@ -10,6 +10,7 @@ import Icon from '@/components/ui/icon';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Review {
   id: number;
@@ -59,6 +60,8 @@ export default function Index() {
   ]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [newReview, setNewReview] = useState({ author: '', rating: 5, comment: '' });
+  const [filterCategory, setFilterCategory] = useState<'all' | 'juice' | 'clothing'>('all');
+  const [filterRating, setFilterRating] = useState<string>('all');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -181,6 +184,42 @@ export default function Index() {
         ))}
       </div>
     );
+  };
+
+  const getFilteredProducts = () => {
+    let filtered = products;
+
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(p => p.category === filterCategory);
+    }
+
+    if (filterRating !== 'all') {
+      const minRating = parseFloat(filterRating);
+      filtered = filtered.filter(p => {
+        const avgRating = parseFloat(getAverageRating(p.id));
+        return avgRating >= minRating;
+      });
+    }
+
+    return filtered;
+  };
+
+  const getFilteredProducts = () => {
+    let filtered = products;
+
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(p => p.category === filterCategory);
+    }
+
+    if (filterRating !== 'all') {
+      const minRating = parseFloat(filterRating);
+      filtered = filtered.filter(p => {
+        const avgRating = parseFloat(getAverageRating(p.id));
+        return avgRating >= minRating;
+      });
+    }
+
+    return filtered;
   };
 
   const addToCart = (product: Product) => {
@@ -317,13 +356,55 @@ export default function Index() {
           </TabsList>
 
           <TabsContent value="shop" className="animate-fade-in">
+            <div className="flex flex-wrap gap-4 mb-8 items-center justify-center">
+              <div className="flex items-center gap-2">
+                <Icon name="Filter" size={20} className="text-primary" />
+                <span className="text-sm font-mono text-muted-foreground">ФИЛЬТРЫ:</span>
+              </div>
+              <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as 'all' | 'juice' | 'clothing')}>
+                <SelectTrigger className="w-[180px] bg-secondary border-border">
+                  <SelectValue placeholder="Категория" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="all">Все товары</SelectItem>
+                  <SelectItem value="juice">Соки</SelectItem>
+                  <SelectItem value="clothing">Одежда</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterRating} onValueChange={setFilterRating}>
+                <SelectTrigger className="w-[180px] bg-secondary border-border">
+                  <SelectValue placeholder="Рейтинг" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="all">Любой рейтинг</SelectItem>
+                  <SelectItem value="4">⭐ 4+ звезды</SelectItem>
+                  <SelectItem value="3">⭐ 3+ звезды</SelectItem>
+                  <SelectItem value="2">⭐ 2+ звезды</SelectItem>
+                </SelectContent>
+              </Select>
+              {(filterCategory !== 'all' || filterRating !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFilterCategory('all');
+                    setFilterRating('all');
+                  }}
+                  className="border-primary text-primary hover:bg-primary/20"
+                >
+                  Сбросить
+                </Button>
+              )}
+            </div>
             <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
-                  СОКИ
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {products.filter(p => p.category === 'juice').map(product => (
+              {filterCategory === 'all' && (
+                <>
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
+                      СОКИ
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {getFilteredProducts().filter(p => p.category === 'juice').map(product => (
                     <Card
                       key={product.id}
                       className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
@@ -431,12 +512,12 @@ export default function Index() {
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
-                  ОДЕЖДА
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {products.filter(p => p.category === 'clothing').map(product => (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
+                      ОДЕЖДА
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {getFilteredProducts().filter(p => p.category === 'clothing').map(product => (
                     <Card
                       key={product.id}
                       className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
@@ -542,7 +623,91 @@ export default function Index() {
                     </Card>
                   ))}
                 </div>
-              </div>
+                  </div>
+                </>
+              )}
+              
+              {filterCategory === 'juice' && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
+                    СОКИ
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {getFilteredProducts().map(product => (
+                      <Card
+                        key={product.id}
+                        className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
+                      >
+                        <div className="aspect-square bg-gradient-to-b from-secondary to-background flex items-center justify-center text-8xl backdrop-blur-sm">
+                          {product.image}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-bold text-lg mb-2 tracking-wide">{product.name}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            {renderStars(Number(getAverageRating(product.id)))}
+                            <span className="text-xs text-muted-foreground font-mono">
+                              ({getProductReviews(product.id).length})
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-primary font-mono text-xl">{product.price} ₽</span>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => addToCart(product)}
+                                className="bg-primary hover:bg-primary/80"
+                              >
+                                <Icon name="Plus" size={16} />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {filterCategory === 'clothing' && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4 tracking-wider border-b border-primary pb-2">
+                    ОДЕЖДА
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {getFilteredProducts().map(product => (
+                      <Card
+                        key={product.id}
+                        className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
+                      >
+                        <div className="aspect-square bg-gradient-to-b from-secondary to-background flex items-center justify-center text-8xl backdrop-blur-sm">
+                          {product.image}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-bold text-lg mb-2 tracking-wide">{product.name}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            {renderStars(Number(getAverageRating(product.id)))}
+                            <span className="text-xs text-muted-foreground font-mono">
+                              ({getProductReviews(product.id).length})
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-primary font-mono text-xl">{product.price} ₽</span>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => addToCart(product)}
+                                className="bg-primary hover:bg-primary/80"
+                              >
+                                <Icon name="Plus" size={16} />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 
