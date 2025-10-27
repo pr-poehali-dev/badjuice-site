@@ -2,11 +2,23 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface Review {
+  id: number;
+  productId: number;
+  author: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 interface Product {
   id: number;
@@ -14,6 +26,8 @@ interface Product {
   price: number;
   category: 'juice' | 'clothing';
   image: string;
+  rating?: number;
+  reviewCount?: number;
 }
 
 interface CartItem extends Product {
@@ -38,6 +52,13 @@ export default function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeTab, setActiveTab] = useState('shop');
   const [currentTrack, setCurrentTrack] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([
+    { id: 1, productId: 1, author: 'GHOST_USER', rating: 5, comment: 'Вкус как из потусторонного мира. Рекомендую.', date: '2025-10-20' },
+    { id: 2, productId: 1, author: 'VOID_WALKER', rating: 4, comment: 'Хороший сок, но мало крови.', date: '2025-10-18' },
+    { id: 3, productId: 3, author: 'ARCHIVE_X', rating: 5, comment: 'Худи топ, качество отличное. Глитч-эффект как надо.', date: '2025-10-15' },
+  ]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [newReview, setNewReview] = useState({ author: '', rating: 5, comment: '' });
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -115,6 +136,51 @@ export default function Index() {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const getProductReviews = (productId: number) => {
+    return reviews.filter(review => review.productId === productId);
+  };
+
+  const getAverageRating = (productId: number) => {
+    const productReviews = getProductReviews(productId);
+    if (productReviews.length === 0) return 0;
+    const sum = productReviews.reduce((acc, review) => acc + review.rating, 0);
+    return (sum / productReviews.length).toFixed(1);
+  };
+
+  const handleSubmitReview = () => {
+    if (!selectedProduct || !newReview.author || !newReview.comment) return;
+    
+    const review: Review = {
+      id: Date.now(),
+      productId: selectedProduct.id,
+      author: newReview.author,
+      rating: newReview.rating,
+      comment: newReview.comment,
+      date: new Date().toISOString().split('T')[0]
+    };
+    
+    setReviews([...reviews, review]);
+    setNewReview({ author: '', rating: 5, comment: '' });
+  };
+
+  const renderStars = (rating: number, interactive: boolean = false, onRate?: (rating: number) => void) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Icon
+            key={star}
+            name="Star"
+            size={16}
+            className={`${
+              star <= rating ? 'text-primary fill-primary' : 'text-muted-foreground'
+            } ${interactive ? 'cursor-pointer hover:text-primary' : ''}`}
+            onClick={() => interactive && onRate?.(star)}
+          />
+        ))}
+      </div>
+    );
   };
 
   const addToCart = (product: Product) => {
@@ -260,22 +326,104 @@ export default function Index() {
                   {products.filter(p => p.category === 'juice').map(product => (
                     <Card
                       key={product.id}
-                      className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group cursor-pointer"
+                      className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
                     >
                       <div className="aspect-square bg-gradient-to-b from-secondary to-background flex items-center justify-center text-8xl backdrop-blur-sm">
                         {product.image}
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-lg mb-2 tracking-wide">{product.name}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          {renderStars(Number(getAverageRating(product.id)))}
+                          <span className="text-xs text-muted-foreground font-mono">
+                            ({getProductReviews(product.id).length})
+                          </span>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-primary font-mono text-xl">{product.price} ₽</span>
-                          <Button
-                            size="sm"
-                            onClick={() => addToCart(product)}
-                            className="bg-primary hover:bg-primary/80"
-                          >
-                            <Icon name="Plus" size={16} />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedProduct(product)}
+                                  className="border-border"
+                                >
+                                  <Icon name="MessageSquare" size={16} />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-card border-border max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle className="text-foreground text-xl tracking-wider">
+                                    {product.name} — ОТЗЫВЫ
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <ScrollArea className="h-[400px] pr-4">
+                                  <div className="space-y-4">
+                                    {getProductReviews(product.id).length === 0 ? (
+                                      <p className="text-muted-foreground text-center py-8">Отзывов пока нет</p>
+                                    ) : (
+                                      getProductReviews(product.id).map((review) => (
+                                        <Card key={review.id} className="bg-secondary border-border p-4">
+                                          <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                              <p className="font-bold text-sm font-mono">{review.author}</p>
+                                              <p className="text-xs text-muted-foreground">{review.date}</p>
+                                            </div>
+                                            {renderStars(review.rating)}
+                                          </div>
+                                          <p className="text-sm">{review.comment}</p>
+                                        </Card>
+                                      ))
+                                    )}
+                                  </div>
+                                </ScrollArea>
+                                <div className="border-t border-border pt-4 space-y-3">
+                                  <h3 className="font-bold text-sm tracking-wider">ОСТАВИТЬ ОТЗЫВ</h3>
+                                  <div>
+                                    <Label htmlFor="review-author" className="text-xs text-muted-foreground">ИМЯ</Label>
+                                    <Input
+                                      id="review-author"
+                                      placeholder="Ваше имя"
+                                      value={newReview.author}
+                                      onChange={(e) => setNewReview({ ...newReview, author: e.target.value })}
+                                      className="bg-background border-border mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">ОЦЕНКА</Label>
+                                    <div className="mt-2">
+                                      {renderStars(newReview.rating, true, (rating) => setNewReview({ ...newReview, rating }))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="review-comment" className="text-xs text-muted-foreground">КОММЕНТАРИЙ</Label>
+                                    <Textarea
+                                      id="review-comment"
+                                      placeholder="Ваш отзыв..."
+                                      value={newReview.comment}
+                                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                      className="bg-background border-border mt-1 min-h-[80px]"
+                                    />
+                                  </div>
+                                  <Button 
+                                    className="w-full bg-primary hover:bg-primary/80"
+                                    onClick={handleSubmitReview}
+                                  >
+                                    ОТПРАВИТЬ ОТЗЫВ
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              size="sm"
+                              onClick={() => addToCart(product)}
+                              className="bg-primary hover:bg-primary/80"
+                            >
+                              <Icon name="Plus" size={16} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -291,22 +439,104 @@ export default function Index() {
                   {products.filter(p => p.category === 'clothing').map(product => (
                     <Card
                       key={product.id}
-                      className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group cursor-pointer"
+                      className="bg-card border-border overflow-hidden hover:border-primary transition-all hover:shadow-[0_0_20px_rgba(139,0,0,0.3)] group"
                     >
                       <div className="aspect-square bg-gradient-to-b from-secondary to-background flex items-center justify-center text-8xl backdrop-blur-sm">
                         {product.image}
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-lg mb-2 tracking-wide">{product.name}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          {renderStars(Number(getAverageRating(product.id)))}
+                          <span className="text-xs text-muted-foreground font-mono">
+                            ({getProductReviews(product.id).length})
+                          </span>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-primary font-mono text-xl">{product.price} ₽</span>
-                          <Button
-                            size="sm"
-                            onClick={() => addToCart(product)}
-                            className="bg-primary hover:bg-primary/80"
-                          >
-                            <Icon name="Plus" size={16} />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedProduct(product)}
+                                  className="border-border"
+                                >
+                                  <Icon name="MessageSquare" size={16} />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-card border-border max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle className="text-foreground text-xl tracking-wider">
+                                    {product.name} — ОТЗЫВЫ
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <ScrollArea className="h-[400px] pr-4">
+                                  <div className="space-y-4">
+                                    {getProductReviews(product.id).length === 0 ? (
+                                      <p className="text-muted-foreground text-center py-8">Отзывов пока нет</p>
+                                    ) : (
+                                      getProductReviews(product.id).map((review) => (
+                                        <Card key={review.id} className="bg-secondary border-border p-4">
+                                          <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                              <p className="font-bold text-sm font-mono">{review.author}</p>
+                                              <p className="text-xs text-muted-foreground">{review.date}</p>
+                                            </div>
+                                            {renderStars(review.rating)}
+                                          </div>
+                                          <p className="text-sm">{review.comment}</p>
+                                        </Card>
+                                      ))
+                                    )}
+                                  </div>
+                                </ScrollArea>
+                                <div className="border-t border-border pt-4 space-y-3">
+                                  <h3 className="font-bold text-sm tracking-wider">ОСТАВИТЬ ОТЗЫВ</h3>
+                                  <div>
+                                    <Label htmlFor="clothing-review-author" className="text-xs text-muted-foreground">ИМЯ</Label>
+                                    <Input
+                                      id="clothing-review-author"
+                                      placeholder="Ваше имя"
+                                      value={newReview.author}
+                                      onChange={(e) => setNewReview({ ...newReview, author: e.target.value })}
+                                      className="bg-background border-border mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">ОЦЕНКА</Label>
+                                    <div className="mt-2">
+                                      {renderStars(newReview.rating, true, (rating) => setNewReview({ ...newReview, rating }))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="clothing-review-comment" className="text-xs text-muted-foreground">КОММЕНТАРИЙ</Label>
+                                    <Textarea
+                                      id="clothing-review-comment"
+                                      placeholder="Ваш отзыв..."
+                                      value={newReview.comment}
+                                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                      className="bg-background border-border mt-1 min-h-[80px]"
+                                    />
+                                  </div>
+                                  <Button 
+                                    className="w-full bg-primary hover:bg-primary/80"
+                                    onClick={handleSubmitReview}
+                                  >
+                                    ОТПРАВИТЬ ОТЗЫВ
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              size="sm"
+                              onClick={() => addToCart(product)}
+                              className="bg-primary hover:bg-primary/80"
+                            >
+                              <Icon name="Plus" size={16} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
