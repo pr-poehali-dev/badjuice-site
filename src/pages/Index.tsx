@@ -42,6 +42,12 @@ const products: Product[] = [
   { id: 4, name: 'GLITCH TEE', price: 1500, category: 'clothing', image: '⚡' },
   { id: 5, name: 'ROTTEN APPLE', price: 320, category: 'juice', image: '🍎' },
   { id: 6, name: 'VOID JACKET', price: 4500, category: 'clothing', image: '🌑' },
+  { id: 7, name: 'GHOST GRAPE', price: 365, category: 'juice', image: '👻' },
+  { id: 8, name: 'TOXIC LIME', price: 340, category: 'juice', image: '☢️' },
+  { id: 9, name: 'DECAY BERRY', price: 375, category: 'juice', image: '🫐' },
+  { id: 10, name: 'CORRUPTED MELON', price: 390, category: 'juice', image: '🍉' },
+  { id: 11, name: 'VOID PLUM', price: 355, category: 'juice', image: '🌑' },
+  { id: 12, name: 'GLITCH MANGO', price: 400, category: 'juice', image: '⚡' },
 ];
 
 interface Track {
