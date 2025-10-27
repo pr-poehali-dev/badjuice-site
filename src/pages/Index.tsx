@@ -204,24 +204,6 @@ export default function Index() {
     return filtered;
   };
 
-  const getFilteredProducts = () => {
-    let filtered = products;
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === filterCategory);
-    }
-
-    if (filterRating !== 'all') {
-      const minRating = parseFloat(filterRating);
-      filtered = filtered.filter(p => {
-        const avgRating = parseFloat(getAverageRating(p.id));
-        return avgRating >= minRating;
-      });
-    }
-
-    return filtered;
-  };
-
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
