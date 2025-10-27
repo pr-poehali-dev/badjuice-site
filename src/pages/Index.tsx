@@ -68,9 +68,16 @@ export default function Index() {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const tracks: Track[] = [
-    { name: 'DECAY.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-    { name: 'GLITCH_MEMORIES.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-    { name: 'ARCHIVE_001.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+    { name: 'BLOOD_DRIP.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+    { name: 'DECAY.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+    { name: 'GLITCH_MEMORIES.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+    { name: 'ARCHIVE_001.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
+    { name: 'VOID_WALKER.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3' },
+    { name: 'CORRUPTED_DATA.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3' },
+    { name: 'DARK_CHERRY_DREAMS.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3' },
+    { name: 'ROTTEN_ECHOES.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3' },
+    { name: 'GHOST_PROTOCOL.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3' },
+    { name: 'BADJUICE_ANTHEM.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3' },
   ];
 
   useEffect(() => {
