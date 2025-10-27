@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,12 +29,93 @@ const products: Product[] = [
   { id: 6, name: 'VOID JACKET', price: 4500, category: 'clothing', image: '🌑' },
 ];
 
+interface Track {
+  name: string;
+  url: string;
+}
+
 export default function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeTab, setActiveTab] = useState('shop');
   const [currentTrack, setCurrentTrack] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  const tracks = ['DECAY.mp3', 'GLITCH_MEMORIES.mp3', 'ARCHIVE_001.mp3'];
+  const tracks: Track[] = [
+    { name: 'DECAY.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+    { name: 'GLITCH_MEMORIES.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+    { name: 'ARCHIVE_001.mp3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+  ];
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (currentTrack < tracks.length - 1) {
+        setCurrentTrack(currentTrack + 1);
+      }
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentTrack, tracks.length]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.src = tracks[currentTrack].url;
+      if (isPlaying) {
+        audioRef.current.play();
+      }
+    }
+  }, [currentTrack, tracks]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTrackSelect = (index: number) => {
+    setCurrentTrack(index);
+    setIsPlaying(true);
+  };
+
+  const handlePrevTrack = () => {
+    const newIndex = Math.max(0, currentTrack - 1);
+    setCurrentTrack(newIndex);
+    setIsPlaying(true);
+  };
+
+  const handleNextTrack = () => {
+    const newIndex = Math.min(tracks.length - 1, currentTrack + 1);
+    setCurrentTrack(newIndex);
+    setIsPlaying(true);
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -244,7 +325,7 @@ export default function Index() {
                   {tracks.map((track, index) => (
                     <div
                       key={index}
-                      onClick={() => setCurrentTrack(index)}
+                      onClick={() => handleTrackSelect(index)}
                       className={`p-4 rounded border cursor-pointer transition-all ${
                         currentTrack === index
                           ? 'border-primary bg-primary/10'
@@ -252,11 +333,30 @@ export default function Index() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon name={currentTrack === index ? 'Pause' : 'Play'} size={20} className="text-primary" />
-                        <span className="font-mono text-sm">{track}</span>
+                        <Icon 
+                          name={currentTrack === index && isPlaying ? 'Pause' : 'Play'} 
+                          size={20} 
+                          className="text-primary" 
+                        />
+                        <span className="font-mono text-sm">{track.name}</span>
                       </div>
                     </div>
                   ))}
+                </div>
+
+                <audio ref={audioRef} />
+
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                  <div className="w-full h-1 bg-border rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-center gap-4 pt-6 border-t border-border">
@@ -264,21 +364,24 @@ export default function Index() {
                     size="icon"
                     variant="outline"
                     className="border-border"
-                    onClick={() => setCurrentTrack(Math.max(0, currentTrack - 1))}
+                    onClick={handlePrevTrack}
+                    disabled={currentTrack === 0}
                   >
                     <Icon name="SkipBack" size={20} />
                   </Button>
                   <Button
                     size="icon"
                     className="bg-primary hover:bg-primary/80 h-12 w-12"
+                    onClick={togglePlay}
                   >
-                    <Icon name="Play" size={24} />
+                    <Icon name={isPlaying ? 'Pause' : 'Play'} size={24} />
                   </Button>
                   <Button
                     size="icon"
                     variant="outline"
                     className="border-border"
-                    onClick={() => setCurrentTrack(Math.min(tracks.length - 1, currentTrack + 1))}
+                    onClick={handleNextTrack}
+                    disabled={currentTrack === tracks.length - 1}
                   >
                     <Icon name="SkipForward" size={20} />
                   </Button>
